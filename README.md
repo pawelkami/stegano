@@ -10,3 +10,11 @@
 
 ### Kopiowanie pcap na maszynę:
 docker cp [container]:/pcaps/traffic.pcap [ścieżka pod którą chcemy zapisać]
+
+## Klient:
+
+### Budowanie:
+#### docker build -t best/client .
+
+### Uruchamianie:
+#### docker run -d --rm --add-cap NET_ADMIN best/client
