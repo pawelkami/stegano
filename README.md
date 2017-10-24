@@ -18,3 +18,11 @@ docker cp [container]:/pcaps/traffic.pcap [ścieżka pod którą chcemy zapisać
 
 ### Uruchamianie:
 #### docker run -d --rm --add-cap NET_ADMIN best/client
+
+## Całość
+
+### Budowanie:
+#### docker-compose build
+
+### Uruchamianie:
+#### docker-compose up
