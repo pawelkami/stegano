@@ -6,6 +6,7 @@ COPY client.py /stegano
 COPY steganowriter.py /stegano
 COPY requirements.txt /stegano
 COPY agent.sh /stegano
+COPY Antygona.txt /stegano
 
 # Install dependencies
 RUN apk --update add wget g++ linux-headers python3-dev libnfnetlink-dev libnetfilter_queue-dev iptables
