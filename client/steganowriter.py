@@ -1,23 +1,39 @@
-#!/bin/python
+#!/bin/python3
 #-*- coding: utf-8 -*-
 
 from netfilterqueue import NetfilterQueue
+from scapy.all import *
 import socket
 
-def readFile(filename):
+
+def read_file(filename):
     with open(filename, 'rb') as f:
         data = f.read()
         return data		
 
-def print_and_accept(pkt):
-    print(pkt)
-    pkt.accept()
+
+textToHide = read_file("/stegano/Antygona.txt")
+byte_num = 0
+
+
+def modify(packet):
+    scapy_pkt = Ether() / IP() / TCP() / packet.get_payload()
+    tcp_pkt = scapy_pkt.getlayer(TCP)
+    global textToHide
+    global byte_num
+
+    if byte_num < len(textToHide):
+        tcp_pkt.urgptr = textToHide[byte_num]
+        byte_num += 1
+
+    print('Secret message: ' + chr(tcp_pkt.urgptr))
+    sendp(scapy_pkt)
+    packet.drop()
+
 
 nfqueue = NetfilterQueue()
-nfqueue.bind(0, print_and_accept)
+nfqueue.bind(0, modify)
 s = socket.fromfd(nfqueue.get_fd(), socket.AF_UNIX, socket.SOCK_STREAM)
-
-textToHide = readFile("/stegano/Antygona.txt")
 
 try:
     nfqueue.run_socket(s)
