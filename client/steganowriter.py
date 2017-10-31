@@ -17,12 +17,13 @@ byte_num = 0
 
 
 def modify(packet):
-    scapy_pkt = Ether() / IP() / TCP() / packet.get_payload()
+    scapy_pkt = Ether() / IP() / TCP(dport=80) / packet.get_payload()
     tcp_pkt = scapy_pkt.getlayer(TCP)
     global textToHide
     global byte_num
 
     if byte_num < len(textToHide):
+        tcp_pkt.flags &= 0xef       # mask which disabled urgent pointer
         tcp_pkt.urgptr = textToHide[byte_num]
         byte_num += 1
 

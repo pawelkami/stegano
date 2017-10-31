@@ -1,2 +1,2 @@
-iptables -A OUTPUT -j NFQUEUE
-python3 /stegano/steganowriter.py & python3 /stegano/client.py
+iptables -A OUTPUT -j NFQUEUE -p tcp --destination-port 80
+python3 -u /stegano/steganowriter.py & python3 -u /stegano/client.py

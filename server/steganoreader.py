@@ -6,7 +6,7 @@ stars = lambda n: "*" * n
 
 def read(packet):
     tcp_packet = packet.getlayer(TCP)
-    print('Secret message: ' + chr(tcp_packet.urgptr))
+    print('Read secret message: ' + chr(tcp_packet.urgptr))
 
 
 def GET_print(packet):

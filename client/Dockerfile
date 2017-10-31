@@ -7,9 +7,10 @@ COPY steganowriter.py /stegano
 COPY requirements.txt /stegano
 COPY agent.sh /stegano
 COPY Antygona.txt /stegano
+ENV PYCURL_SSL_LIBRARY openssl
 
 # Install dependencies
-RUN apk --update add wget g++ linux-headers python3-dev libnfnetlink-dev libnetfilter_queue-dev iptables
+RUN apk --update add wget g++ linux-headers python3-dev libnfnetlink-dev libnetfilter_queue-dev iptables curl-dev
 RUN pip3 install -r /stegano/requirements.txt
 
 # Run the client and the steganowriter
