@@ -1,2 +1,2 @@
 Flask==0.10.1
-scapy==2.3.3
+scapy-python3==0.21

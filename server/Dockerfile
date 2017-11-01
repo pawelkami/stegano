@@ -1,5 +1,5 @@
 # our base image
-FROM alpine:latest
+FROM python:3.6-alpine
 
 # Install python and pip
 RUN apk add --update py-pip tcpdump tshark
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r /usr/src/app/requirements.txt
 COPY app.py /usr/src/app/
 COPY templates/index.html /usr/src/app/templates/
 COPY agent.sh /usr/src/app
-COPY steganoreader.py /
+COPY steganoreader.py /usr/src/app
 
 # tell the port number the container should expose
 EXPOSE 80

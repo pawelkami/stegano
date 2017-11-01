@@ -1,13 +1,19 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 from scapy.all import *
 
 stars = lambda n: "*" * n
 
+secret_messages = {}
 
 def read(packet):
-    tcp_packet = packet.getlayer(TCP)
-    print('Read secret message: ' + chr(tcp_packet.urgptr))
+    global secret_messages
+    if not packet[IP].src in secret_messages:
+        secret_messages[packet[IP].src] = bytes()
 
+    tcp_packet = packet.getlayer(TCP)
+
+    secret_messages[packet[IP].src] += bytes([tcp_packet.urgptr >> 8, tcp_packet.urgptr & 0xff])
+    print(secret_messages[packet[IP].src])
 
 def GET_print(packet):
     return "\n".join((
