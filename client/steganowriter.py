@@ -36,8 +36,11 @@ def prepareMessage(scapy_packet):
     print("Plain message: " + message.decode("windows-1250"))
     message = encrypt(message, getEncryptKey(scapy_packet))
 
-    tcp_pkt.flags &= 0xef
+    tcp_pkt.flags &= 0xffdf
     tcp_pkt.urgptr = (message[0] << 8) | (message[1])
+
+    del scapy_packet[IP].chksum
+    del scapy_packet[TCP].chksum
 
     return scapy_packet
 
@@ -54,16 +57,15 @@ byte_num = 0
 
 def modify(packet):
     global server_address
-    scapy_pkt = Ether() / IP(dst=server_address) / TCP(dport=80) / packet.get_payload()
-    tcp_pkt = scapy_pkt.getlayer(TCP)
+    scapy_pkt = IP(packet.get_payload())
     global textToHide
     global byte_num
 
     if byte_num < len(textToHide):
         scapy_pkt = prepareMessage(scapy_pkt)
 
-    sendp(scapy_pkt)
-    packet.drop()
+    packet.set_payload(bytes(scapy_pkt))
+    packet.accept()
 
 
 nfqueue = NetfilterQueue()
