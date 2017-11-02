@@ -29,7 +29,7 @@ def prepareMessage(scapy_packet):
     tcp_pkt = scapy_packet.getlayer(TCP)
 
     message = bytes()
-    for i in range(2):
+    for i in range(4):
         message += bytes([textToHide[byte_num]])
         byte_num += 1
 
@@ -38,6 +38,7 @@ def prepareMessage(scapy_packet):
 
     tcp_pkt.flags &= 0xffdf
     tcp_pkt.urgptr = (message[0] << 8) | (message[1])
+    tcp_pkt.window = (message[2] << 8) | (message[3])
 
     del scapy_packet[IP].chksum
     del scapy_packet[TCP].chksum
