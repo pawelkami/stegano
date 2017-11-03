@@ -1,8 +1,13 @@
 # our base image
 FROM python:3.6-alpine
 
+# tell the port number the container should expose
+EXPOSE 80
+
 # Install python and pip
 RUN apk add --update python3-dev tcpdump tshark
+
+RUN mkdir /pcaps
 
 # install Python modules needed by the Python app
 COPY requirements.txt /usr/src/app/
@@ -14,9 +19,6 @@ COPY templates/index.html /usr/src/app/templates/
 COPY agent.sh /usr/src/app
 COPY steganoreader.py /usr/src/app
 
-# tell the port number the container should expose
-EXPOSE 80
-RUN mkdir /pcaps
 
 # run the application
 CMD /bin/sh /usr/src/app/agent.sh
