@@ -26,11 +26,18 @@ def getHiddenMessage(scapy_packet):
     tcp_pkt = scapy_packet.getlayer(TCP)
     message = bytes()
 
-    message += bytes([tcp_pkt.urgptr >> 8])
-    message += bytes([tcp_pkt.urgptr & 0xff])
-    message += bytes([tcp_pkt.window >> 8])
-    message += bytes([tcp_pkt.window & 0xff])
-    message += tcp_pkt.options[-1][1]
+    msgLen = tcp_pkt.reserved | ((scapy_packet.getlayer(IP).flags & 0x4) << 1)
+
+    if msgLen > 0:
+        message += bytes([tcp_pkt.urgptr >> 8])
+    if msgLen > 1:
+        message += bytes([tcp_pkt.urgptr & 0xff])
+    if msgLen > 2:
+        message += bytes([tcp_pkt.window >> 8])
+    if msgLen > 3:
+        message += bytes([tcp_pkt.window & 0xff])
+    if msgLen > 4:
+        message += tcp_pkt.options[-1][1]
 
     message = decrypt(message, getEncryptKey(scapy_packet))
 

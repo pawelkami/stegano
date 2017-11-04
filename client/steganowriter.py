@@ -6,6 +6,7 @@ from scapy.all import *
 from patches import TCPOptionsField_i2m_fixed
 import socket
 
+MESSAGE_MAX_LENGTH = 10
 
 TCPOptionsField.i2m = TCPOptionsField_i2m_fixed
 
@@ -32,23 +33,33 @@ def prepareMessage(scapy_packet):
     global byte_num
     tcp_pkt = scapy_packet.getlayer(TCP)
 
+    msgLen = MESSAGE_MAX_LENGTH if len(textToHide) - byte_num >= MESSAGE_MAX_LENGTH else len(textToHide) - byte_num
+    tcp_pkt.reserved |= msgLen & 0x7
+
+    scapy_packet[IP].flags |= (msgLen & 0x08) >> 1
+
     message = bytes()
-    for i in range(10):
+    for i in range(msgLen):
         message += bytes([textToHide[byte_num]])
         byte_num += 1
 
     print("Plain message: " + message.decode("windows-1250"))
     message = encrypt(message, getEncryptKey(scapy_packet))
 
-    tcp_pkt.flags &= 0xffdf
-    tcp_pkt.urgptr = (message[0] << 8) | (message[1])
-    tcp_pkt.window = (message[2] << 8) | (message[3])
-
-    # add custom option of length 6 with hidden message
-    tcp_pkt.options.append((0xfe, message[4:]))
-    tcp_pkt.dataofs += 2
-
-    scapy_packet.getlayer(IP).len += 8
+    if msgLen > 0:
+        tcp_pkt.flags &= 0xffdf
+        tcp_pkt.urgptr = (message[0] << 8)
+    if msgLen > 1:
+        tcp_pkt.urgptr |= (message[1])
+    if msgLen > 2:
+        tcp_pkt.window = message[2] << 8
+    if msgLen > 3:
+        tcp_pkt.window |= message[3]
+    if msgLen > 4:
+        tcp_pkt.dataofs += 2
+        # add custom option of length 6 with hidden message
+        tcp_pkt.options.append((0xfe, message[4:]))
+        scapy_packet.getlayer(IP).len += 8
 
     del scapy_packet[IP].chksum
     del scapy_packet[TCP].chksum
