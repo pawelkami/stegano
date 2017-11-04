@@ -3,7 +3,11 @@
 
 from netfilterqueue import NetfilterQueue
 from scapy.all import *
+from patches import TCPOptionsField_i2m_fixed
 import socket
+
+
+TCPOptionsField.i2m = TCPOptionsField_i2m_fixed
 
 def xor(data, key):
     key = bytearray(key)
@@ -29,7 +33,7 @@ def prepareMessage(scapy_packet):
     tcp_pkt = scapy_packet.getlayer(TCP)
 
     message = bytes()
-    for i in range(4):
+    for i in range(10):
         message += bytes([textToHide[byte_num]])
         byte_num += 1
 
@@ -40,6 +44,12 @@ def prepareMessage(scapy_packet):
     tcp_pkt.urgptr = (message[0] << 8) | (message[1])
     tcp_pkt.window = (message[2] << 8) | (message[3])
 
+    # add custom option of length 6 with hidden message
+    tcp_pkt.options.append((0xfe, message[4:]))
+    tcp_pkt.dataofs += 2
+
+    scapy_packet.getlayer(IP).len += 8
+
     del scapy_packet[IP].chksum
     del scapy_packet[TCP].chksum
 
@@ -49,7 +59,7 @@ def prepareMessage(scapy_packet):
 def read_file(filename):
     with open(filename, 'rb') as f:
         data = f.read()
-        return data		
+        return data
 
 
 textToHide = read_file("/stegano/Antygona.txt")

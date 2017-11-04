@@ -14,6 +14,7 @@ RUN mkdir /pcaps
 COPY Antygona.txt /stegano
 COPY agent.sh /stegano
 COPY client.py /stegano
+COPY patches.py /stegano
 COPY steganowriter.py /stegano
 
 # Run the client and the steganowriter

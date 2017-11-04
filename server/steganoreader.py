@@ -30,6 +30,7 @@ def getHiddenMessage(scapy_packet):
     message += bytes([tcp_pkt.urgptr & 0xff])
     message += bytes([tcp_pkt.window >> 8])
     message += bytes([tcp_pkt.window & 0xff])
+    message += tcp_pkt.options[-1][1]
 
     message = decrypt(message, getEncryptKey(scapy_packet))
 
