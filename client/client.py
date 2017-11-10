@@ -1,10 +1,20 @@
 import time
 from urllib.parse import urlencode
-import random
 import pycurl
 import string
+import random
 
-urls = ('http://server/', 'http://server/doggos', 'http://server/dogs', 'http://server/cats', 'http://server/doggos/add')
+addresses = [
+    "server",
+    "server/example",
+    "server/programming",
+    "server/stegano",
+    "server/wireshark",
+    "server/doggos",
+    "server/dogs",
+    "server/cats",
+    "server/doggos/add"
+]
 
 
 def generate_form_data():
@@ -19,11 +29,11 @@ def generate_form_data():
 while True:
     time.sleep(0.1)
     try:
-        url = random.choice(urls)
+        address = random.choice(addresses)
         c = pycurl.Curl()
-        c.setopt(c.URL, url)
+        c.setopt(c.URL, address)
         c.setopt(pycurl.WRITEFUNCTION, lambda x: None)
-        if url == "http://server/doggos/add" and random.randint(0, 1) == 1:
+        if address == "server/doggos/add" and random.randint(0, 1) == 1:
             c.setopt(c.POSTFIELDS, generate_form_data())
         c.perform()
     except Exception as e:

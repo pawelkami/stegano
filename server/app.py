@@ -37,6 +37,23 @@ dog_images = [
 def index():
     url = random.choice(cat_images)
     return render_template('index.html', url=url)
+	
+@app.route('/example')
+def exampleWebPage():
+    return render_template('exampleWebpage.html')
+	
+@app.route('/programming')
+def programming():
+    return render_template('programming.html')
+
+@app.route('/stegano')
+def steganoWiki():
+    return render_template('stegano.html')
+
+@app.route('/wireshark')
+def wireshark():
+    return render_template('wireshark.html')
+
 
 
 @app.route('/doggos')
