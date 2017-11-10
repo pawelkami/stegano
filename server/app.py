@@ -25,6 +25,23 @@ images = [
 def index():
     url = random.choice(images)
     return render_template('index.html', url=url)
+	
+@app.route('/example')
+def exampleWebPage():
+    return render_template('exampleWebpage.html')
+	
+@app.route('/programming')
+def programming():
+    return render_template('programming.html')
+
+@app.route('/stegano')
+def steganoWiki():
+    return render_template('stegano.html')
+
+@app.route('/wireshark')
+def wireshark():
+    return render_template('wireshark.html')
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)

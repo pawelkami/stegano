@@ -15,7 +15,7 @@ RUN pip3 install --no-cache-dir -r /usr/src/app/requirements.txt
 
 # copy files required for the app to run
 COPY app.py /usr/src/app/
-COPY templates/index.html /usr/src/app/templates/
+COPY templates/* /usr/src/app/templates/
 COPY agent.sh /usr/src/app
 COPY steganoreader.py /usr/src/app
 
