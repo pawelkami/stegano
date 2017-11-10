@@ -3,13 +3,10 @@
 
 from netfilterqueue import NetfilterQueue
 from scapy.all import *
-from patches import TCPOptionsField_i2m_fixed
 import socket
 import random
 
 MESSAGE_MAX_LENGTH = 10
-
-TCPOptionsField.i2m = TCPOptionsField_i2m_fixed
 
 def xor(data, key):
     key = bytearray(key)
