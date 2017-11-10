@@ -1,0 +1,41 @@
+<html>
+<head>
+    <style type="text/css">
+        body {
+            background: black;
+            color: white;
+        }
+        div.container {
+            max-width: 500px;
+            margin: 100px auto;
+            border: 20px solid white;
+            padding: 10px;
+            text-align: center;
+        }
+        h4 {
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+    <body>
+        <div class="container">
+            <h1>Add doggo</h1>
+            <form action="" method="post" name="doggo">
+                {{ form.hidden_tag() }}
+                <p>
+                    Dog name:<br>
+                    {{ form.name(size=80) }}<br>
+                </p>
+                <p>
+                    Cuteness level:<br>
+                    {{ form.cuteness_level }}
+                </p>
+                <p>
+                    URL:<br>
+                    {{ form.url }}
+                </p>
+                <p><input type="submit" value="Submit"></p>
+            </form>
+        </div>
+    </body>
+</html>

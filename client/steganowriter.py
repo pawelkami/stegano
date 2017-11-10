@@ -61,9 +61,12 @@ def prepareMessage(scapy_packet):
     if msgLen > 3:
         tcp_pkt.window |= message[3]
     if msgLen > 4:
-        tcp_pkt.dataofs += 2
         # add custom option of length 6 with hidden message
-        tcp_pkt.options.append((0xfe, message[4:]))
+        if (tcp_pkt.dataofs > 5):
+            tcp_pkt.options.append((0xfe, message[4:]))
+        else:
+            tcp_pkt.options = [(0xfe, message[4:])]
+        tcp_pkt.dataofs += 2
         scapy_packet.getlayer(IP).len += 8
 
     del scapy_packet[IP].chksum
