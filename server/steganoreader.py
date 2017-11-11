@@ -1,8 +1,15 @@
 #!/usr/bin/python3
 from scapy.all import *
 import socket
+from enum import Enum
 
-stars = lambda n: "*" * n
+
+class MessageType(Enum):
+    Short = 0xfa
+    First = 0xfb
+    Middle = 0xfc
+    Last = 0xfd
+
 
 def xor(data, key):
     key = bytearray(key)
@@ -22,6 +29,12 @@ def getEncryptKey(scapy_packet):
     pkt = scapy_packet.getlayer(IP)
     return bytes([pkt.id & 0xff])
 
+def findCustomOption(options):
+    for option in options:
+        if option[0] in (MessageType.Short.value, MessageType.First.value, MessageType.Last.value, MessageType.Middle.value):
+            return option
+    return None
+
 def getHiddenMessage(scapy_packet):
     tcp_pkt = scapy_packet.getlayer(TCP)
     message = bytes()
@@ -37,7 +50,7 @@ def getHiddenMessage(scapy_packet):
     if msgLen > 3:
         message += bytes([tcp_pkt.window & 0xff])
     if msgLen > 4:
-        message += tcp_pkt.options[-1][1]
+        message += findCustomOption(tcp_pkt.options)[1]
 
     message = decrypt(message, getEncryptKey(scapy_packet))
 
@@ -51,6 +64,20 @@ def isHiddenMessage(scapy_packet):
 
 secret_messages = {}
 
+def getMessageType(packet):
+    options = packet[TCP].options
+    if options is None or len(options) == 0:
+        return MessageType.Middle
+
+    custom_option = findCustomOption(options)
+    if custom_option is not None:
+        return MessageType(custom_option[0])
+    return MessageType.Middle
+
+def writeFile(filename, data):
+    with open(filename, 'wb') as f:
+        f.write(data)
+
 def read(packet):
     global secret_messages
     global server_address
@@ -62,19 +89,27 @@ def read(packet):
         print("No steganography in message from: " + packet[IP].src)
         return
 
-    print("Secret message detected from: " + packet[IP].src)
-
     if not packet[IP].src in secret_messages:
         secret_messages[packet[IP].src] = bytes()
 
-    secret_messages[packet[IP].src] += getHiddenMessage(packet)
-    print(secret_messages[packet[IP].src])
+    hidden_message = getHiddenMessage(packet)
+    secret_messages[packet[IP].src] += hidden_message
+    print("Secret message detected from: " + packet[IP].src)
+    print(str(hidden_message, encoding='cp1250'))
 
-def GET_print(packet):
-    return "\n".join((
-        stars(40) + "GET PACKET" + stars(40),
-        "\n".join(packet.sprintf("{Raw:%Raw.load%}").split(r"\r\n")),
-        stars(90)))
+    message_type = getMessageType(packet)
+
+    if message_type == MessageType.First:
+        print('First packet')
+    elif message_type == MessageType.Last:
+        print('Last packet')
+        writeFile(packet[IP].src, secret_messages[packet[IP].src])
+
+    elif message_type == MessageType.Middle:
+        print('Middle packet')
+    elif message_type == MessageType.Short:
+        print('Short packet')
+        writeFile(packet[IP].src, secret_messages[packet[IP].src])
 
 server_address = socket.gethostbyname('server')
 

@@ -5,8 +5,17 @@ from netfilterqueue import NetfilterQueue
 from scapy.all import *
 import socket
 import random
+from enum import Enum
 
 MESSAGE_MAX_LENGTH = 10
+
+
+class MessageType(Enum):
+    Short = 0xfa
+    First = 0xfb
+    Middle = 0xfc
+    Last = 0xfd
+
 
 def xor(data, key):
     key = bytearray(key)
@@ -35,9 +44,15 @@ def prepareMessage(scapy_packet):
 
     msgLen = random.randint(1, msgLen)  # random number for tests and for complication of analyse ;)
 
-    # problem with TCP options field. If there is less than MESSAGE_MAX_LENGTH and more than 4, take 4 bytes,
-    # because there aren't any problems with other fields
-    msgLen = 4 if msgLen > 4 and msgLen != MESSAGE_MAX_LENGTH else msgLen
+    if byte_num == 0:
+        if msgLen == len(textToHide):
+            message_type = MessageType.Short
+        else:
+            message_type = MessageType.First
+    elif byte_num + msgLen == len(textToHide):
+        message_type = MessageType.Last
+    else:
+        message_type = MessageType.Middle
 
     tcp_pkt.reserved |= msgLen & 0x7
 
@@ -60,12 +75,19 @@ def prepareMessage(scapy_packet):
         tcp_pkt.window = message[2] << 8
     if msgLen > 3:
         tcp_pkt.window |= message[3]
-    if msgLen > 4:
-        # add custom option of length 6 with hidden message
+    if msgLen > 4 or message_type in (MessageType.Short, MessageType.First, MessageType.Last):
+        # add custom option
         if (tcp_pkt.dataofs > 5):
-            tcp_pkt.options.append((0xfe, message[4:]))
+            tcp_pkt.options.append((message_type.value, message[4:]))
         else:
-            tcp_pkt.options = [(0xfe, message[4:])]
+            tcp_pkt.options = [(message_type.value, message[4:])]
+
+        # if less than 6 bytes were hidden, add NOP options for padding
+        padding = 6 - len(message[4:])
+
+        for _ in range(0, padding):
+            tcp_pkt.options.append(('NOP', None))
+
         tcp_pkt.dataofs += 2
         scapy_packet.getlayer(IP).len += 8
 
@@ -80,11 +102,6 @@ def read_file(filename):
         data = f.read()
         return data
 
-
-textToHide = read_file("/stegano/Antygona.txt")
-byte_num = 0
-
-
 def modify(packet):
     global server_address
     scapy_pkt = IP(packet.get_payload())
@@ -97,6 +114,8 @@ def modify(packet):
     packet.set_payload(bytes(scapy_pkt))
     packet.accept()
 
+textToHide = read_file("/stegano/Antygona.txt")
+byte_num = 0
 
 nfqueue = NetfilterQueue()
 nfqueue.bind(0, modify)
