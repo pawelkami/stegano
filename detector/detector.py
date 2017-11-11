@@ -7,11 +7,8 @@ import sys
 def isHiddenMessage(packet):
     if not packet.haslayer(TCP):
         return False
-
     tcp = packet[TCP]
-    if tcp.urgptr != 0 and not (tcp.flags & 0x20):
-        return True
-    return False
+    return (tcp.reserved | ((packet.getlayer(IP).flags & 0x4) << 1)) > 0
 
 
 def parsePcap(filename):
