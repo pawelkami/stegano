@@ -35,32 +35,28 @@ def findCustomOption(options):
             return option
     return None
 
+def getMessageLength(scapy_packet):
+    tcp_pkt = scapy_packet.getlayer(TCP)
+    return tcp_pkt.reserved | ((scapy_packet.getlayer(IP).flags & 0x4) << 1)
+
 def getHiddenMessage(scapy_packet):
     tcp_pkt = scapy_packet.getlayer(TCP)
     message = bytes()
 
-    msgLen = tcp_pkt.reserved | ((scapy_packet.getlayer(IP).flags & 0x4) << 1)
+    msgLen = getMessageLength(scapy_packet)
 
     if msgLen > 0:
-        message += bytes([tcp_pkt.urgptr >> 8])
-    if msgLen > 1:
-        message += bytes([tcp_pkt.urgptr & 0xff])
-    if msgLen > 2:
         message += bytes([tcp_pkt.window >> 8])
-    if msgLen > 3:
+    if msgLen > 1:
         message += bytes([tcp_pkt.window & 0xff])
-    if msgLen > 4:
+    if msgLen > 2:
         message += findCustomOption(tcp_pkt.options)[1]
-
     message = decrypt(message, getEncryptKey(scapy_packet))
 
     return message
 
 def isHiddenMessage(scapy_packet):
-    pkt = scapy_packet.getlayer(TCP)
-    if pkt.urgptr != 0 and not (pkt.flags & 0x20):
-        return True
-    return False
+    return getMessageLength(scapy_packet) > 0
 
 secret_messages = {}
 

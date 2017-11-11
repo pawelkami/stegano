@@ -7,7 +7,7 @@ import socket
 import random
 from enum import Enum
 
-MESSAGE_MAX_LENGTH = 10
+MESSAGE_MAX_LENGTH = 8
 
 
 class MessageType(Enum):
@@ -67,23 +67,18 @@ def prepareMessage(scapy_packet):
     message = encrypt(message, getEncryptKey(scapy_packet))
 
     if msgLen > 0:
-        tcp_pkt.flags &= 0xffdf
-        tcp_pkt.urgptr = message[0] << 8
+        tcp_pkt.window = message[0] << 8
     if msgLen > 1:
-        tcp_pkt.urgptr |= message[1]
-    if msgLen > 2:
-        tcp_pkt.window = message[2] << 8
-    if msgLen > 3:
-        tcp_pkt.window |= message[3]
-    if msgLen > 4 or message_type in (MessageType.Short, MessageType.First, MessageType.Last):
-        # add custom option
+        tcp_pkt.window |= message[1]
+    if msgLen > 2 or message_type in (MessageType.Short, MessageType.First, MessageType.Last):
+        # add custom TCP option
         if (tcp_pkt.dataofs > 5):
-            tcp_pkt.options.append((message_type.value, message[4:]))
+            tcp_pkt.options.append((message_type.value, message[2:]))
         else:
-            tcp_pkt.options = [(message_type.value, message[4:])]
+            tcp_pkt.options = [(message_type.value, message[2:])]
 
         # if less than 6 bytes were hidden, add NOP options for padding
-        padding = 6 - len(message[4:])
+        padding = 6 - len(message[2:])
 
         for _ in range(0, padding):
             tcp_pkt.options.append(('NOP', None))
