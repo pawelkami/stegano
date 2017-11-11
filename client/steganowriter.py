@@ -7,7 +7,7 @@ import socket
 import random
 from enum import Enum
 
-MESSAGE_MAX_LENGTH = 8
+MESSAGE_MAX_LENGTH = 12
 
 
 class MessageType(Enum):
@@ -77,14 +77,15 @@ def prepareMessage(scapy_packet):
         else:
             tcp_pkt.options = [(message_type.value, message[2:])]
 
-        # if less than 6 bytes were hidden, add NOP options for padding
-        padding = 6 - len(message[2:])
+        # if custom option length is not a multiplicity of 4, apply padding
+        padding = 0 if (2 + len(message[2:])) % 4 == 0 else 4 - (2 + len(message[2:])) % 4
 
         for _ in range(0, padding):
             tcp_pkt.options.append(('NOP', None))
 
-        tcp_pkt.dataofs += 2
-        scapy_packet.getlayer(IP).len += 8
+        # data offset is the number of 4 byte words between TCP header start and end
+        tcp_pkt.dataofs += int((2 + len(message[2:]) + padding) / 4)
+        scapy_packet.getlayer(IP).len += (2 + len(message[2:]) + padding)
 
     del scapy_packet[IP].chksum
     del scapy_packet[TCP].chksum
