@@ -105,3 +105,8 @@ ENV/
 # PyCharm
 .idea
 .project
+
+detector/build/*
+detector/dist/*
+detector/detector.spec
+detector/__pycache__/*

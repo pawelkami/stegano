@@ -26,3 +26,10 @@ docker cp [container]:/pcaps/traffic.pcap [ścieżka pod którą chcemy zapisać
 
 ### Uruchamianie:
 #### docker-compose up
+
+
+
+### Tworzenie detector.exe:
+#### cd detector/
+#### pyinstaller --onefile --icon=icon.ico detector.py
+#### Stworzony plik exe leży pod ścieżką detector/dist/detector.exe
