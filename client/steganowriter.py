@@ -37,27 +37,43 @@ def get_encryption_key(scapy_packet):
     return bytes([ip_pkt.id & 0xff])
 
 
+def get_random_message_length():
+    msg_len = MESSAGE_MAX_LENGTH if len(text_to_hide) - byte_num >= MESSAGE_MAX_LENGTH else len(text_to_hide) - byte_num
+    msg_len = random.randint(1, msg_len)  # random number for tests and for complication of analyse ;)
+    return msg_len
+
+
+def get_message_type(msg_len):
+    if byte_num == 0:
+        if msg_len == len(text_to_hide):
+            return MessageType.Short
+        else:
+            return MessageType.First
+    elif byte_num + msg_len == len(text_to_hide):
+        return MessageType.Last
+    else:
+        return MessageType.Middle
+
+
+def add_custom_tcp_option(tcp_pkt, option):
+    if tcp_pkt.dataofs > 5:
+        tcp_pkt.options.append(option)
+    else:
+        tcp_pkt.options = [option]
+
+
 def prepare_message(scapy_packet):
     global text_to_hide
     global byte_num
     tcp_pkt = scapy_packet.getlayer(TCP)
 
-    msg_len = MESSAGE_MAX_LENGTH if len(text_to_hide) - byte_num >= MESSAGE_MAX_LENGTH else len(text_to_hide) - byte_num
+    # Messages have random length from 1 to 12 bytes
+    msg_len = get_random_message_length()
+    # Message can be of type Short, First, Middle or Last
+    message_type = get_message_type(msg_len)
 
-    msg_len = random.randint(1, msg_len)  # random number for tests and for complication of analyse ;)
-
-    if byte_num == 0:
-        if msg_len == len(text_to_hide):
-            message_type = MessageType.Short
-        else:
-            message_type = MessageType.First
-    elif byte_num + msg_len == len(text_to_hide):
-        message_type = MessageType.Last
-    else:
-        message_type = MessageType.Middle
-
+    # Hide message length inside TCP and IP headers
     tcp_pkt.reserved |= msg_len & 0x7
-
     scapy_packet.getlayer(IP).flags |= (msg_len & 0x08) >> 1
 
     message = bytes()
@@ -73,22 +89,20 @@ def prepare_message(scapy_packet):
     if msg_len > 1:
         tcp_pkt.window |= message[1]
     if msg_len > 2 or message_type in (MessageType.Short, MessageType.First, MessageType.Last):
-        # add custom TCP option
-        if tcp_pkt.dataofs > 5:
-            tcp_pkt.options.append((message_type.value, message[2:]))
-        else:
-            tcp_pkt.options = [(message_type.value, message[2:])]
-
+        option = (message_type.value, message[2:])
+        option_length = 2 + len(message[2:])
+        add_custom_tcp_option(tcp_pkt, option)
         # if custom option length is not a multiplicity of 4, apply padding
-        padding = 0 if (2 + len(message[2:])) % 4 == 0 else 4 - (2 + len(message[2:])) % 4
+        padding = 0 if option_length % 4 == 0 else 4 - option_length % 4
 
         for _ in range(0, padding):
             tcp_pkt.options.append(("NOP", None))
 
         # data offset is the number of 4 byte words between TCP header start and end
-        tcp_pkt.dataofs += int((2 + len(message[2:]) + padding) / 4)
-        scapy_packet.getlayer(IP).len += (2 + len(message[2:]) + padding)
+        tcp_pkt.dataofs += (option_length + padding) // 4
+        scapy_packet.getlayer(IP).len += (option_length + padding)
 
+    # Deleting checksums will trigger their recalculation
     del scapy_packet.getlayer(IP).chksum
     del scapy_packet.getlayer(TCP).chksum
 
