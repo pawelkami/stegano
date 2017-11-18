@@ -1,4 +1,5 @@
-#!/usr/bin/python3
+#!/bin/python3
+# -*- coding: utf-8 -*-
 
 from flask import Flask, render_template, redirect
 from flask_wtf import FlaskForm
@@ -37,23 +38,26 @@ dog_images = [
 def index():
     url = random.choice(cat_images)
     return render_template('index.html', url=url)
-	
+
+
 @app.route('/example')
 def exampleWebPage():
     return render_template('exampleWebpage.html')
-	
+
+
 @app.route('/programming')
 def programming():
     return render_template('programming.html')
+
 
 @app.route('/stegano')
 def steganoWiki():
     return render_template('stegano.html')
 
+
 @app.route('/wireshark')
 def wireshark():
     return render_template('wireshark.html')
-
 
 
 @app.route('/doggos')
@@ -71,6 +75,7 @@ class DogForm(FlaskForm):
     name = StringField('name', validators=[DataRequired()])
     cuteness_level = IntegerField('cuteness')
     url = StringField('url')
+
 
 @app.route('/doggos/add', methods=['GET', 'POST'])
 def add():

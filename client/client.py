@@ -1,3 +1,6 @@
+#!/bin/python3
+# -*- coding: utf-8 -*-
+
 import time
 from urllib.parse import urlencode
 import pycurl
@@ -38,4 +41,3 @@ while True:
         c.perform()
     except Exception as e:
         print(e)
-

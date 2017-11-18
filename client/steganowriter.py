@@ -1,5 +1,5 @@
 #!/bin/python3
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 from netfilterqueue import NetfilterQueue
 from scapy.all import *
@@ -31,48 +31,50 @@ def xor(data, key):
 def encrypt(message, key):
     return xor(message, key)
 
-def getEncryptKey(scapy_packet):
-    pkt = scapy_packet.getlayer(IP)
-    return bytes([pkt.id & 0xff])
 
-def prepareMessage(scapy_packet):
-    global textToHide
+def get_encryption_key(scapy_packet):
+    ip_pkt = scapy_packet.getlayer(IP)
+    return bytes([ip_pkt.id & 0xff])
+
+
+def prepare_message(scapy_packet):
+    global text_to_hide
     global byte_num
     tcp_pkt = scapy_packet.getlayer(TCP)
 
-    msgLen = MESSAGE_MAX_LENGTH if len(textToHide) - byte_num >= MESSAGE_MAX_LENGTH else len(textToHide) - byte_num
+    msg_len = MESSAGE_MAX_LENGTH if len(text_to_hide) - byte_num >= MESSAGE_MAX_LENGTH else len(text_to_hide) - byte_num
 
-    msgLen = random.randint(1, msgLen)  # random number for tests and for complication of analyse ;)
+    msg_len = random.randint(1, msg_len)  # random number for tests and for complication of analyse ;)
 
     if byte_num == 0:
-        if msgLen == len(textToHide):
+        if msg_len == len(text_to_hide):
             message_type = MessageType.Short
         else:
             message_type = MessageType.First
-    elif byte_num + msgLen == len(textToHide):
+    elif byte_num + msg_len == len(text_to_hide):
         message_type = MessageType.Last
     else:
         message_type = MessageType.Middle
 
-    tcp_pkt.reserved |= msgLen & 0x7
+    tcp_pkt.reserved |= msg_len & 0x7
 
-    scapy_packet[IP].flags |= (msgLen & 0x08) >> 1
+    scapy_packet.getlayer(IP).flags |= (msg_len & 0x08) >> 1
 
     message = bytes()
-    for i in range(msgLen):
-        message += bytes([textToHide[byte_num]])
+    for i in range(msg_len):
+        message += bytes([text_to_hide[byte_num]])
         byte_num += 1
 
     print("Plain message: " + message.decode("windows-1250"))
-    message = encrypt(message, getEncryptKey(scapy_packet))
+    message = encrypt(message, get_encryption_key(scapy_packet))
 
-    if msgLen > 0:
+    if msg_len > 0:
         tcp_pkt.window = message[0] << 8
-    if msgLen > 1:
+    if msg_len > 1:
         tcp_pkt.window |= message[1]
-    if msgLen > 2 or message_type in (MessageType.Short, MessageType.First, MessageType.Last):
+    if msg_len > 2 or message_type in (MessageType.Short, MessageType.First, MessageType.Last):
         # add custom TCP option
-        if (tcp_pkt.dataofs > 5):
+        if tcp_pkt.dataofs > 5:
             tcp_pkt.options.append((message_type.value, message[2:]))
         else:
             tcp_pkt.options = [(message_type.value, message[2:])]
@@ -81,14 +83,14 @@ def prepareMessage(scapy_packet):
         padding = 0 if (2 + len(message[2:])) % 4 == 0 else 4 - (2 + len(message[2:])) % 4
 
         for _ in range(0, padding):
-            tcp_pkt.options.append(('NOP', None))
+            tcp_pkt.options.append(("NOP", None))
 
         # data offset is the number of 4 byte words between TCP header start and end
         tcp_pkt.dataofs += int((2 + len(message[2:]) + padding) / 4)
         scapy_packet.getlayer(IP).len += (2 + len(message[2:]) + padding)
 
-    del scapy_packet[IP].chksum
-    del scapy_packet[TCP].chksum
+    del scapy_packet.getlayer(IP).chksum
+    del scapy_packet.getlayer(TCP).chksum
 
     return scapy_packet
 
@@ -98,25 +100,25 @@ def read_file(filename):
         data = f.read()
         return data
 
+
 def modify(packet):
-    global server_address
-    scapy_pkt = IP(packet.get_payload())
-    global textToHide
+    global text_to_hide
     global byte_num
 
-    if byte_num < len(textToHide):
-        scapy_pkt = prepareMessage(scapy_pkt)
+    if byte_num < len(text_to_hide):
+        scapy_pkt = IP(packet.get_payload())
+        scapy_pkt = prepare_message(scapy_pkt)
+        packet.set_payload(bytes(scapy_pkt))
 
-    packet.set_payload(bytes(scapy_pkt))
     packet.accept()
 
-textToHide = read_file("/stegano/Antygona.txt")
-byte_num = 0
 
 nfqueue = NetfilterQueue()
 nfqueue.bind(0, modify)
 s = socket.fromfd(nfqueue.get_fd(), socket.AF_UNIX, socket.SOCK_STREAM)
-server_address = socket.gethostbyname('server')
+
+text_to_hide = read_file("/stegano/Antygona.txt")
+byte_num = 0
 
 try:
     nfqueue.run_socket(s)

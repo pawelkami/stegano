@@ -1,5 +1,5 @@
 #!/bin/python3
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -19,22 +19,22 @@ print("Work in progress...")
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 
-def isHiddenMessage(packet):
+
+def is_hidden_message(packet):
     if not packet.haslayer(TCP):
         return False
-    tcp = packet[TCP]
+    tcp = packet.getlayer(TCP)
     return (tcp.reserved | ((packet.getlayer(IP).flags & 0x4) << 1)) > 0
 
 
-def parsePcap(filename):
+def parse_pcap(filename):
     pcap = rdpcap(filename)
     for pkt in pcap:
-        if isHiddenMessage(pkt):
+        if is_hidden_message(pkt):
             print("File contains hidden data!!!")
             return
 
     print("File does NOT contain hidden data")
 
 
-
-parsePcap(sys.argv[1])
+parse_pcap(sys.argv[1])
