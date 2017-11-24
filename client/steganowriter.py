@@ -62,6 +62,12 @@ def add_custom_tcp_option(tcp_pkt, option):
         tcp_pkt.options = [option]
 
 
+def delete_nop_tcp_options(tcp_pkt):
+    for o in tcp_pkt.options:
+        if o[0] == "NOP":
+            tcp_pkt.options.remove(o)
+
+
 def prepare_message(scapy_packet):
     global text_to_hide
     global byte_num
@@ -83,6 +89,8 @@ def prepare_message(scapy_packet):
 
     print("Plain message: " + message.decode("windows-1250"))
     message = encrypt(message, get_encryption_key(scapy_packet))
+
+    delete_nop_tcp_options(tcp_pkt)
 
     if msg_len > 0:
         tcp_pkt.window = message[0] << 8
